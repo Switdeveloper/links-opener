@@ -26,10 +26,30 @@
         <main class="main">
             <div class="hero">
                 <h1 class="title">Open Multiple Links at Once</h1>
-                <p class="subtitle">Paste your URLs below and open them all in new tabs with one click</p>
+                <p class="subtitle">Paste URLs, upload a file, or drag & drop. Open them all in batches.</p>
             </div>
 
+            <!-- Input Section -->
             <div class="input-section">
+                <!-- File Upload Area -->
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept=".txt,.csv,.json,.md" hidden>
+                    <div class="upload-content">
+                        <svg class="upload-icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <path d="M24 8L24 32M24 8L16 16M24 8L32 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 34H36C38.2091 34 40 35.7909 40 38V40C40 42.2091 38.2091 44 36 44H12C9.79086 44 8 42.2091 8 40V38C8 35.7909 9.79086 34 12 34Z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <p class="upload-text">Drag & drop a file here or <span class="upload-link">browse</span></p>
+                        <p class="upload-hint">Supports .txt, .csv, .json, .md</p>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="divider">
+                    <span class="divider-text">OR</span>
+                </div>
+
+                <!-- Text Input -->
                 <div class="input-header">
                     <label class="input-label">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -64,45 +84,108 @@
                         <span id="validCount">0 valid</span>
                     </div>
                 </div>
+            </div>
 
-                <div class="actions">
-                    <button class="btn btn-primary" id="openAllBtn" disabled>
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                            <path d="M9 3V15M3 9H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        Open All Links
-                    </button>
-                    <button class="btn btn-secondary" id="openValidBtn" disabled>
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                            <path d="M3 9H15M9 3L15 9L9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        Open Valid Only
-                    </button>
+            <!-- Batch Settings -->
+            <div class="batch-settings" id="batchSettings" style="display: none;">
+                <div class="batch-header">
+                    <h3>Batch Settings</h3>
+                    <span class="batch-info" id="batchInfo">0 batches</span>
+                </div>
+                <div class="batch-controls">
+                    <div class="batch-control">
+                        <label>Links per batch</label>
+                        <div class="batch-input-group">
+                            <input type="number" id="batchSize" value="10" min="1" max="100">
+                            <span class="batch-hint">Max: 100</span>
+                        </div>
+                    </div>
+                    <div class="batch-control">
+                        <label>Delay between batches</label>
+                        <div class="batch-input-group">
+                            <input type="number" id="batchDelay" value="2000" min="0" max="30000" step="500">
+                            <span class="batch-hint">ms</span>
+                        </div>
+                    </div>
+                    <div class="batch-control">
+                        <label>Total batches</label>
+                        <div class="batch-value" id="totalBatches">0</div>
+                    </div>
                 </div>
             </div>
 
+            <!-- Actions -->
+            <div class="actions">
+                <button class="btn btn-primary" id="openAllBtn" disabled>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M9 3V15M3 9H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Open All Links
+                </button>
+                <button class="btn btn-secondary" id="openValidBtn" disabled>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M3 9H15M9 3L15 9L9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Open Valid Only
+                </button>
+                <button class="btn btn-batch" id="openBatchBtn" disabled>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <rect x="2" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M6 6H12M6 9H12M6 12H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Open by Batch
+                </button>
+            </div>
+
+            <!-- Progress Panel -->
+            <div class="progress-panel" id="progressPanel" style="display: none;">
+                <div class="progress-header">
+                    <span class="progress-title">Opening URLs...</span>
+                    <span class="progress-count" id="progressCount">0 / 0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-stats">
+                    <span id="progressBatch">Batch 0 of 0</span>
+                    <span id="progressNext">Next batch in 2s</span>
+                </div>
+                <button class="btn btn-danger" id="cancelBatchBtn">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M7 7L2 2M7 7L12 2M7 7L2 12M7 7L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Cancel
+                </button>
+            </div>
+
+            <!-- Features -->
             <div class="features">
                 <div class="feature-card">
+                    <div class="feature-icon">📁</div>
+                    <h3>File Upload</h3>
+                    <p>Upload .txt, .csv, .json, or .md files with URLs</p>
+                </div>
+                <div class="feature-card">
                     <div class="feature-icon">⚡</div>
-                    <h3>Lightning Fast</h3>
-                    <p>Open dozens of links instantly in new browser tabs</p>
+                    <h3>Batch Processing</h3>
+                    <p>Open links in configurable batches with delays</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🔒</div>
                     <h3>Privacy First</h3>
                     <p>All processing happens locally in your browser</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">✨</div>
-                    <h3>Smart Validation</h3>
-                    <p>Automatically detects and validates URLs</p>
-                </div>
             </div>
 
+            <!-- URL List -->
             <div class="url-list-section" id="urlListSection" style="display: none;">
                 <div class="url-list-header">
                     <h3>URL Preview</h3>
-                    <button class="btn-text" id="togglePreviewBtn">Hide</button>
+                    <div class="url-list-actions">
+                        <button class="btn-text" id="selectAllBtn">Select All</button>
+                        <button class="btn-text" id="deselectAllBtn">Deselect All</button>
+                        <button class="btn-text" id="togglePreviewBtn">Hide</button>
+                    </div>
                 </div>
                 <ul class="url-list" id="urlList"></ul>
             </div>
@@ -116,6 +199,34 @@
                 <a href="https://github.com/Switdeveloper/links-opener" target="_blank">GitHub</a>
             </p>
         </footer>
+    </div>
+
+    <!-- Batch Confirmation Modal -->
+    <div class="modal" id="batchModal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>Open URLs in Batches</h3>
+            <p>You're about to open <strong id="batchModalCount">0</strong> URLs in batches.</p>
+            <div class="batch-summary">
+                <div class="batch-summary-item">
+                    <span>Links per batch:</span>
+                    <strong id="modalBatchSize">10</strong>
+                </div>
+                <div class="batch-summary-item">
+                    <span>Total batches:</span>
+                    <strong id="modalTotalBatches">0</strong>
+                </div>
+                <div class="batch-summary-item">
+                    <span>Delay between batches:</span>
+                    <strong id="modalBatchDelay">2000ms</strong>
+                </div>
+            </div>
+            <p class="modal-hint">⚠️ Make sure your browser allows popups for this site.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmBatchBtn">Start Opening</button>
+            </div>
+        </div>
     </div>
 
     <div class="toast" id="toast">

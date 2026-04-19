@@ -1,18 +1,34 @@
 # 🔗 Links Opener
 
-A beautiful, fast, and privacy-focused web app to open multiple URLs in new browser tabs with one click.
+A beautiful, fast, and privacy-focused web app to open multiple URLs in new browser tabs with one click. Now with file upload and batch processing!
 
 ![Links Opener Screenshot](https://via.placeholder.com/800x400/0E0E0E/5E6AD2?text=Links+Opener)
 
 ## ✨ Features
 
+### Core Features
 - **🚀 Lightning Fast**: Open dozens of links instantly
 - **🔒 Privacy First**: All processing happens locally - no data sent to servers
 - **✨ Smart Validation**: Automatically detects and validates URLs
-- **🎯 URL Preview**: See all URLs with visual validation indicators
-- **💾 Auto-Save**: Your URLs are saved locally for convenience
+- **📁 File Upload**: Upload .txt, .csv, .json, or .md files
+- **🎯 Batch Processing**: Open links in configurable batches with delays
+- **☑️ Selective Opening**: Choose which URLs to open
+- **💾 Auto-Save**: Your URLs and settings saved locally
 - **⌨️ Keyboard Shortcuts**: `Cmd/Ctrl + Enter` to open all
-- **📱 Responsive**: Works beautifully on mobile and desktop
+
+### File Upload Support
+- **.txt** - Plain text files with URLs (one per line)
+- **.csv** - Comma-separated URLs
+- **.json** - JSON array or object with urls/links property
+- **.md** - Markdown files (extracts URLs from content)
+- **Drag & Drop** - Simply drag files onto the upload area
+
+### Batch Processing
+- Configure batch size (links per batch)
+- Set delay between batches (0-30 seconds)
+- Visual progress tracking
+- Cancel anytime
+- Prevents browser overload
 
 ## 🚀 Live Demo
 
@@ -20,16 +36,61 @@ A beautiful, fast, and privacy-focused web app to open multiple URLs in new brow
 
 ## 🛠️ Usage
 
-1. **Paste or type** URLs in the text area (one per line)
-2. **Review** the URL preview with validation indicators
-3. **Click** "Open All Links" or "Open Valid Only"
-4. **Boom!** All links open in new tabs
+### Quick Start
+1. Visit https://switdeveloper.github.io/links-opener/
+2. **Paste URLs** or **Upload a file**
+3. Review the URL preview with validation indicators
+4. Click **"Open All Links"**, **"Open Valid Only"**, or **"Open by Batch"**
+5. All links open in new browser tabs!
 
-### Keyboard Shortcuts
+### File Upload
+1. Click the upload area or drag & drop a file
+2. Supported formats: .txt, .csv, .json, .md
+3. URLs are automatically extracted and validated
+4. Review and click open!
 
-- `Cmd/Ctrl + Enter` - Open valid URLs
-- `Cmd/Ctrl + K` - Clear all URLs
-- `Cmd/Ctrl + V` - Paste from clipboard
+### Batch Processing
+1. Select URLs you want to open (or select all)
+2. Configure batch settings:
+   - Links per batch (default: 10)
+   - Delay between batches (default: 2000ms)
+3. Click "Open by Batch"
+4. Watch progress as batches open automatically
+5. Cancel anytime if needed
+
+### Example Files
+
+#### example.txt
+```
+https://google.com
+https://github.com
+https://stackoverflow.com
+```
+
+#### example.csv
+```
+https://google.com,https://github.com
+https://stackoverflow.com
+```
+
+#### example.json
+```json
+[
+  "https://google.com",
+  "https://github.com",
+  "https://stackoverflow.com"
+]
+```
+
+Or:
+```json
+{
+  "urls": [
+    "https://google.com",
+    "https://github.com"
+  ]
+}
+```
 
 ## 🎨 Design
 
@@ -44,7 +105,9 @@ Built with a clean, Linear-inspired design system:
 - **HTML5** - Semantic markup
 - **CSS3** - Modern CSS with custom properties
 - **Vanilla JavaScript** - No frameworks, pure JS
-- **LocalStorage** - Persist URLs locally
+- **LocalStorage** - Persist URLs and settings
+- **FileReader API** - Read uploaded files
+- **GitHub Pages** - Free hosting
 
 ## 📦 Installation
 
@@ -56,7 +119,6 @@ cd links-opener
 
 ### Open in browser
 ```bash
-# Simply open index.html in your browser
 open index.html
 ```
 
@@ -66,28 +128,22 @@ open index.html
 # Your site will be at: https://yourusername.github.io/links-opener/
 ```
 
-## 📝 API
+## ⌨️ Keyboard Shortcuts
 
-### URL Format Support
-
-The app accepts URLs in various formats:
-- Full URLs: `https://example.com`
-- Without protocol: `example.com` (automatically adds https://)
-- Mixed with invalid URLs (invalid ones are highlighted)
-
-### Input Methods
-
-- Paste from clipboard
-- Type manually
-- Load example URLs
-- Drag and drop (coming soon)
+| Shortcut | Action |
+|----------|--------|
+| `Cmd/Ctrl + Enter` | Open valid URLs |
+| `Cmd/Ctrl + K` | Clear all URLs |
+| `Cmd/Ctrl + V` | Paste from clipboard |
+| `Escape` | Close modals |
 
 ## 🔒 Privacy
 
-- **No server**: All processing happens in your browser
-- **No tracking**: No analytics or tracking scripts
-- **Local storage only**: URLs saved to browser's localStorage
-- **No data collection**: We don't collect any data
+- ✅ All processing happens locally in your browser
+- ✅ No data sent to any server
+- ✅ No tracking or analytics
+- ✅ Files are read locally, never uploaded
+- ✅ Uses browser localStorage only
 
 ## 🤝 Contributing
 
@@ -105,8 +161,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
-- **GitHub**: https://github.com/Switdeveloper/links-opener
 - **Live Demo**: https://switdeveloper.github.io/links-opener/
+- **GitHub**: https://github.com/Switdeveloper/links-opener
 - **Issues**: https://github.com/Switdeveloper/links-opener/issues
 
 ---
