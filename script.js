@@ -1086,7 +1086,7 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
         }
     }
     
-    resumeSession() {
+    async resumeSession() {
         try {
             const sessionData = localStorage.getItem('linksOpener_sessionMemory');
             if (!sessionData) {
@@ -1116,27 +1116,164 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
                 c.classList.toggle('active', c.dataset.mode === this.batchMode);
             });
             
-            // Calculate where to resume
-            const openedCount = session.openedCount || 0;
-            const remainingUrls = session.urls;
+            // Restore form values
+            if (session.batchSize) {
+                this.batchSize.value = session.batchSize;
+                this.manualBatchSize.value = session.batchSize;
+                this.scheduledBatchSize.value = session.batchSize;
+            }
             
-            // Deselect already opened URLs
-            remainingUrls.forEach(url => {
-                this.selectedUrls.add(url);
-            });
+            // Get remaining URLs to open
+            const openedCount = session.openedCount || 0;
+            const remainingUrls = [...session.urls]; // URLs that haven't been opened yet
+            
+            if (remainingUrls.length === 0) {
+                this.showToast('No URLs remaining in session');
+                this.clearSessionMemory();
+                return;
+            }
+            
+            // Update selected URLs to only remaining ones
+            this.selectedUrls = new Set(remainingUrls.map(url => {
+                // Normalize URL for matching
+                try {
+                    new URL(url);
+                    return url;
+                } catch {
+                    return url; // Keep as-is if invalid
+                }
+            }));
             
             // Update UI
             this.renderUrlList();
             this.updateBatchInfo();
             this.updateButtons();
             
-            this.showToast(`Resuming from batch ${Math.floor(openedCount / (session.batchSize || 10)) + 1}. ${remainingUrls.length} URLs remaining.`);
+            const batchSize = session.batchSize || 10;
+            const totalBatches = Math.ceil(remainingUrls.length / batchSize);
+            const currentBatchNum = Math.floor(openedCount / batchSize) + 1;
             
-            // Scroll to actions
-            document.querySelector('.actions').scrollIntoView({ behavior: 'smooth' });
+            // Show confirmation
+            this.showToast(`Resuming batch ${currentBatchNum}... ${remainingUrls.length} URLs remaining`);
+            
+            // Scroll to progress
+            document.querySelector('.batch-settings').scrollIntoView({ behavior: 'smooth' });
+            
+            // Small delay to let UI update
+            await this.delay(500);
+            
+            // Continue batch processing
+            await this.continueBatchProcessing(remainingUrls, openedCount, batchSize);
             
         } catch (e) {
+            console.error('Resume error:', e);
             this.showToast('Error resuming session', 'error');
+        }
+    }
+    
+    async continueBatchProcessing(remainingUrls, openedCount, batchSize) {
+        // Prepare URL array
+        const urlsToOpen = remainingUrls.map(url => this.normalizeUrl(url));
+        
+        // Get delay based on mode
+        let delay = 2000;
+        if (this.batchMode === 'auto') {
+            delay = (parseFloat(this.batchDelay.value) || 2) * 1000;
+        } else if (this.batchMode === 'scheduled') {
+            delay = (parseFloat(this.scheduledDelay.value) || 2) * 1000;
+        }
+        
+        // Setup processing state
+        this.isProcessing = true;
+        this.isPaused = false;
+        this.currentBatchIndex = 0;
+        this.totalBatchCount = Math.ceil(urlsToOpen.length / batchSize);
+        this.batchAbortController = new AbortController();
+        
+        // Calculate total URLs for progress
+        const totalUrls = openedCount + urlsToOpen.length;
+        
+        // Show progress
+        this.progressPanel.style.display = 'block';
+        this.updateProgressUI(openedCount, totalUrls, batchSize);
+        
+        // Update UI based on mode
+        if (this.batchMode === 'manual') {
+            this.pauseBatchBtn.style.display = 'none';
+            this.nextBatchBtn.style.display = 'flex';
+            this.progressNext.textContent = 'Click to open next batch';
+        } else {
+            this.pauseBatchBtn.style.display = 'flex';
+            this.nextBatchBtn.style.display = 'none';
+        }
+        
+        try {
+            for (let i = 0; i < this.totalBatchCount; i++) {
+                if (this.batchAbortController.signal.aborted) {
+                    throw new Error('Cancelled');
+                }
+                
+                this.currentBatchIndex = i;
+                const start = i * batchSize;
+                const end = Math.min(start + batchSize, urlsToOpen.length);
+                const batch = urlsToOpen.slice(start, end);
+                
+                // Handle manual mode
+                if (this.batchMode === 'manual' || this.confirmEachBatch.checked) {
+                    await this.waitForBatchConfirmation(i + 1, this.totalBatchCount, batch.length);
+                }
+                
+                // Check if paused
+                while (this.isPaused) {
+                    await this.delay(100);
+                    if (this.batchAbortController.signal.aborted) {
+                        throw new Error('Cancelled');
+                    }
+                }
+                
+                // Open batch
+                batch.forEach(url => this.openUrl(url));
+                
+                // Update progress and save memory
+                const currentOpenedCount = openedCount + Math.min((i + 1) * batchSize, urlsToOpen.length);
+                this.updateProgressUI(currentOpenedCount, totalUrls, batchSize);
+                
+                // Wait for next batch
+                if (i < this.totalBatchCount - 1 && delay > 0 && this.batchMode !== 'manual') {
+                    await this.delayWithAbort(delay, this.batchAbortController.signal);
+                }
+            }
+            
+            this.showToast(`Completed! Opened ${urlsToOpen.length} URLs in ${this.totalBatchCount} batches`);
+            this.clearSessionMemory();
+            
+        } catch (error) {
+            if (error.message === 'Cancelled') {
+                const actuallyOpened = this.currentBatchIndex * batchSize;
+                const newOpenedCount = openedCount + actuallyOpened;
+                this.saveSessionMemory(newOpenedCount, batchSize);
+                this.showToast(`Paused. ${urlsToOpen.length - actuallyOpened} URLs remaining. Refresh to resume.`);
+            } else {
+                this.showToast('Error during batch processing', 'error');
+                this.clearSessionMemory();
+            }
+        } finally {
+            this.isProcessing = false;
+            this.batchAbortController = null;
+            
+            setTimeout(() => {
+                this.progressPanel.style.display = 'none';
+                this.pauseBatchBtn.style.display = 'flex';
+                this.nextBatchBtn.style.display = 'none';
+                this.pauseBatchBtn.classList.remove('btn-paused');
+                this.pauseBatchBtn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="2" y="2" width="4" height="10" rx="1" fill="currentColor"/>
+                        <rect x="8" y="2" width="4" height="10" rx="1" fill="currentColor"/>
+                    </svg>
+                    Pause
+                `;
+            }, 3000);
         }
     }
 }
