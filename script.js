@@ -532,13 +532,11 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
     
     // Open all URLs in a batch simultaneously
     openBatchUrls(batch) {
-        // Use a small delay between each URL to prevent browser blocking
-        // but open them all in quick succession
-        batch.forEach((url, index) => {
-            setTimeout(() => {
-                this.openUrl(url);
-            }, index * 50); // 50ms stagger for better browser handling
-        });
+        // Open all URLs synchronously in a loop
+        // This must happen synchronously to avoid popup blocking
+        for (let i = 0; i < batch.length; i++) {
+            this.openUrl(batch[i]);
+        }
     }
     
     openAll() {
