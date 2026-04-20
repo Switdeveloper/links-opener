@@ -67,8 +67,16 @@ class LinksOpener {
         this.confirmTotalBatches = document.getElementById('confirmTotalBatches');
         this.confirmBatchSize = document.getElementById('confirmBatchSize');
         this.skipBatchBtn = document.getElementById('skipBatchBtn');
-        this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
+this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
         
+        // Resume Memory Elements
+        this.resumeMemory = document.getElementById('resumeMemory');
+        this.resumeLastOpened = document.getElementById('resumeLastOpened');
+        this.resumeProgress = document.getElementById('resumeProgress');
+        this.resumeRemaining = document.getElementById('resumeRemaining');
+        this.resumeBtn = document.getElementById('resumeBtn');
+        this.clearMemoryBtn = document.getElementById('clearMemoryBtn');
+
         // State
         this.urls = [];
         this.validUrls = [];
@@ -168,6 +176,14 @@ class LinksOpener {
                 this.hideConfirmModal();
             }
         });
+        
+        // Resume memory buttons
+        if (this.resumeBtn) {
+            this.resumeBtn.addEventListener('click', () => this.resumeSession());
+        }
+        if (this.clearMemoryBtn) {
+            this.clearMemoryBtn.addEventListener('click', () => this.clearSessionMemory());
+        }
     }
     
     setupBatchTabs() {
@@ -657,6 +673,9 @@ class LinksOpener {
             this.nextBatchBtn.style.display = 'none';
         }
         
+        // Save initial session memory
+        this.saveSessionMemory(0, batchSize);
+        
         try {
             for (let i = 0; i < this.totalBatchCount; i++) {
                 if (this.batchAbortController.signal.aborted) {
@@ -684,9 +703,9 @@ class LinksOpener {
                 // Open batch
                 batch.forEach(url => this.openUrl(url));
                 
-                // Update progress
-                const openedCount = Math.min((i + 1) * batchSize, selectedUrlsArray.length);
-                this.updateProgressUI(openedCount, selectedUrlsArray.length);
+// Update progress
+            const openedCount = Math.min((i + 1) * batchSize, selectedUrlsArray.length);
+            this.updateProgressUI(openedCount, selectedUrlsArray.length, batchSize);
                 
                 // Wait for next batch
                 if (i < this.totalBatchCount - 1 && delay > 0 && this.batchMode !== 'manual') {
@@ -695,11 +714,13 @@ class LinksOpener {
             }
             
             this.showToast(`Opened ${selectedUrlsArray.length} URLs in ${this.totalBatchCount} batches`);
+            this.clearSessionMemory(); // Clear memory when completed successfully
         } catch (error) {
             if (error.message === 'Cancelled') {
-                this.showToast('Batch processing cancelled');
+                this.showToast('Batch processing cancelled - Session saved. Refresh to resume.');
             } else {
                 this.showToast('Error during batch processing', 'error');
+                this.clearSessionMemory();
             }
         } finally {
             this.isProcessing = false;
@@ -721,11 +742,16 @@ class LinksOpener {
         }
     }
     
-    updateProgressUI(openedCount, totalCount) {
+    updateProgressUI(openedCount, totalCount, batchSize) {
         this.progressCount.textContent = `${openedCount} / ${totalCount}`;
         const progress = (openedCount / totalCount) * 100;
         this.progressFill.style.width = `${progress}%`;
         this.progressBatch.textContent = `Batch ${this.currentBatchIndex + 1} of ${this.totalBatchCount}`;
+        
+        // Save session memory after each batch
+        if (batchSize && openedCount > 0) {
+            this.saveSessionMemory(openedCount, batchSize);
+        }
     }
     
     waitForBatchConfirmation(batchNum, totalBatches, batchSize) {
@@ -965,8 +991,152 @@ class LinksOpener {
             
             const savedSkipInvalid = localStorage.getItem('linksOpener_skipInvalid');
             if (savedSkipInvalid) this.skipInvalid.checked = savedSkipInvalid === 'true';
+            
+            // Check for saved session memory
+            this.checkSessionMemory();
         } catch (e) {
             // Ignore storage errors
+        }
+    }
+    
+    // Session Memory Functions
+    checkSessionMemory() {
+        try {
+            const sessionData = localStorage.getItem('linksOpener_sessionMemory');
+            if (!sessionData) {
+                this.hideResumeMemory();
+                return;
+            }
+            
+            const session = JSON.parse(sessionData);
+            if (!session.urls || session.urls.length === 0) {
+                this.hideResumeMemory();
+                return;
+            }
+            
+            // Check if session is from current URL list
+            const currentUrls = this.urls.join('\n');
+            const savedUrls = session.allUrls.join('\n');
+            
+            if (currentUrls !== savedUrls && this.urls.length > 0) {
+                // Different URLs loaded, ask user
+                this.showToast('Different URLs detected. Previous session available.', 'info');
+            }
+            
+            // Calculate remaining
+            const totalUrls = session.allUrls.length;
+            const openedCount = session.openedCount || 0;
+            const remainingUrls = session.urls.length;
+            const batchSize = session.batchSize || 10;
+            const remainingBatches = Math.ceil(remainingUrls / batchSize);
+            
+            // Update UI
+            this.resumeLastOpened.textContent = new Date(session.lastOpened).toLocaleString();
+            this.resumeProgress.textContent = `${openedCount} / ${totalUrls} URLs`;
+            this.resumeRemaining.textContent = `${remainingBatches} batch${remainingBatches !== 1 ? 'es' : ''}`;
+            
+            this.showResumeMemory();
+        } catch (e) {
+            this.hideResumeMemory();
+        }
+    }
+    
+    showResumeMemory() {
+        if (this.resumeMemory) {
+            this.resumeMemory.style.display = 'block';
+        }
+    }
+    
+    hideResumeMemory() {
+        if (this.resumeMemory) {
+            this.resumeMemory.style.display = 'none';
+        }
+    }
+    
+    saveSessionMemory(openedCount, batchSize) {
+        try {
+            const remainingUrls = this.selectedUrls.size - openedCount;
+            if (remainingUrls <= 0) {
+                this.clearSessionMemory();
+                return;
+            }
+            
+            const sessionData = {
+                allUrls: [...this.selectedUrls],
+                urls: [...this.selectedUrls].slice(openedCount),
+                openedCount: openedCount,
+                batchSize: batchSize,
+                batchMode: this.batchMode,
+                lastOpened: new Date().toISOString(),
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem('linksOpener_sessionMemory', JSON.stringify(sessionData));
+        } catch (e) {
+            // Ignore storage errors
+        }
+    }
+    
+    clearSessionMemory() {
+        try {
+            localStorage.removeItem('linksOpener_sessionMemory');
+            this.hideResumeMemory();
+        } catch (e) {
+            // Ignore storage errors
+        }
+    }
+    
+    resumeSession() {
+        try {
+            const sessionData = localStorage.getItem('linksOpener_sessionMemory');
+            if (!sessionData) {
+                this.showToast('No session to resume', 'error');
+                return;
+            }
+            
+            const session = JSON.parse(sessionData);
+            
+            // Load URLs if different
+            const currentUrls = this.urls.join('\n');
+            const savedUrls = session.allUrls.join('\n');
+            
+            if (currentUrls !== savedUrls) {
+                this.urlInput.value = session.allUrls.join('\n');
+                this.handleInput();
+            }
+            
+            // Restore settings
+            this.batchMode = session.batchMode || 'auto';
+            
+            // Update UI tabs
+            document.querySelectorAll('.batch-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.mode === this.batchMode);
+            });
+            document.querySelectorAll('.batch-mode-content').forEach(c => {
+                c.classList.toggle('active', c.dataset.mode === this.batchMode);
+            });
+            
+            // Calculate where to resume
+            const openedCount = session.openedCount || 0;
+            const remainingUrls = session.urls;
+            
+            // Deselect already opened URLs
+            remainingUrls.forEach(url => {
+                this.selectedUrls.add(url);
+            });
+            
+            // Update UI
+            this.renderUrlList();
+            this.updateBatchInfo();
+            this.updateButtons();
+            
+            this.showToast(`Resuming from batch ${Math.floor(openedCount / (session.batchSize || 10)) + 1}. ${remainingUrls.length} URLs remaining.`);
+            
+            // Scroll to actions
+            document.querySelector('.actions').scrollIntoView({ behavior: 'smooth' });
+            
+        } catch (e) {
+            this.showToast('Error resuming session', 'error');
         }
     }
 }
