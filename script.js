@@ -530,6 +530,17 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
         window.open(url, '_blank', 'noopener,noreferrer');
     }
     
+    // Open all URLs in a batch simultaneously
+    openBatchUrls(batch) {
+        // Use a small delay between each URL to prevent browser blocking
+        // but open them all in quick succession
+        batch.forEach((url, index) => {
+            setTimeout(() => {
+                this.openUrl(url);
+            }, index * 50); // 50ms stagger for better browser handling
+        });
+    }
+    
     openAll() {
         if (this.urls.length === 0) return;
         
@@ -692,7 +703,7 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
                     await this.waitForBatchConfirmation(i + 1, this.totalBatchCount, batch.length);
                 }
                 
-                // Check if paused
+// Check if paused
                 while (this.isPaused) {
                     await this.delay(100);
                     if (this.batchAbortController.signal.aborted) {
@@ -700,11 +711,11 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
                     }
                 }
                 
-                // Open batch
-                batch.forEach(url => this.openUrl(url));
+                // Open batch - all URLs at once
+                this.openBatchUrls(batch);
                 
-// Update progress
-            const openedCount = Math.min((i + 1) * batchSize, selectedUrlsArray.length);
+                // Update progress
+                const openedCount = Math.min((i + 1) * batchSize, selectedUrlsArray.length);
             this.updateProgressUI(openedCount, selectedUrlsArray.length, batchSize);
                 
                 // Wait for next batch
@@ -1223,19 +1234,19 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
                     await this.waitForBatchConfirmation(i + 1, this.totalBatchCount, batch.length);
                 }
                 
-                // Check if paused
-                while (this.isPaused) {
-                    await this.delay(100);
-                    if (this.batchAbortController.signal.aborted) {
-                        throw new Error('Cancelled');
-                    }
+// Check if paused
+            while (this.isPaused) {
+                await this.delay(100);
+                if (this.batchAbortController.signal.aborted) {
+                    throw new Error('Cancelled');
                 }
-                
-                // Open batch
-                batch.forEach(url => this.openUrl(url));
-                
-                // Update progress and save memory
-                const currentOpenedCount = openedCount + Math.min((i + 1) * batchSize, urlsToOpen.length);
+            }
+            
+            // Open batch - all URLs at once
+            this.openBatchUrls(batch);
+            
+            // Update progress and save memory
+            const currentOpenedCount = openedCount + Math.min((i + 1) * batchSize, urlsToOpen.length);
                 this.updateProgressUI(currentOpenedCount, totalUrls, batchSize);
                 
                 // Wait for next batch
