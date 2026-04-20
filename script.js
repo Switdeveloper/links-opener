@@ -685,8 +685,20 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
         // Save initial session memory
         this.saveSessionMemory(0, batchSize);
         
-        try {
-            for (let i = 0; i < this.totalBatchCount; i++) {
+try {
+            // Open first batch immediately (synchronous) to maintain user gesture
+            if (this.totalBatchCount > 0) {
+                const firstBatch = selectedUrlsArray.slice(0, batchSize);
+                this.openBatchUrls(firstBatch);
+                this.updateProgressUI(firstBatch.length, selectedUrlsArray.length, batchSize);
+                
+                // Check if popups were blocked
+                const openedCount = firstBatch.length;
+                this.showToast(`Opening batch 1 of ${this.totalBatchCount}...`);
+            }
+            
+            // Process remaining batches
+            for (let i = 1; i < this.totalBatchCount; i++) {
                 if (this.batchAbortController.signal.aborted) {
                     throw new Error('Cancelled');
                 }
@@ -701,7 +713,7 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
                     await this.waitForBatchConfirmation(i + 1, this.totalBatchCount, batch.length);
                 }
                 
-// Check if paused
+                // Check if paused
                 while (this.isPaused) {
                     await this.delay(100);
                     if (this.batchAbortController.signal.aborted) {
@@ -714,7 +726,7 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
                 
                 // Update progress
                 const openedCount = Math.min((i + 1) * batchSize, selectedUrlsArray.length);
-            this.updateProgressUI(openedCount, selectedUrlsArray.length, batchSize);
+                this.updateProgressUI(openedCount, selectedUrlsArray.length, batchSize);
                 
                 // Wait for next batch
                 if (i < this.totalBatchCount - 1 && delay > 0 && this.batchMode !== 'manual') {
@@ -1216,8 +1228,18 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
             this.nextBatchBtn.style.display = 'none';
         }
         
-        try {
-            for (let i = 0; i < this.totalBatchCount; i++) {
+try {
+            // Open first batch immediately (synchronous)
+            if (this.totalBatchCount > 0) {
+                const firstBatch = urlsToOpen.slice(0, batchSize);
+                this.openBatchUrls(firstBatch);
+                const firstBatchOpened = Math.min(batchSize, urlsToOpen.length);
+                this.updateProgressUI(openedCount + firstBatchOpened, totalUrls, batchSize);
+                this.showToast(`Resumed! Opening batch 1 of ${this.totalBatchCount}...`);
+            }
+            
+            // Process remaining batches
+            for (let i = 1; i < this.totalBatchCount; i++) {
                 if (this.batchAbortController.signal.aborted) {
                     throw new Error('Cancelled');
                 }
@@ -1232,19 +1254,19 @@ this.confirmOpenBatchBtn = document.getElementById('confirmOpenBatchBtn');
                     await this.waitForBatchConfirmation(i + 1, this.totalBatchCount, batch.length);
                 }
                 
-// Check if paused
-            while (this.isPaused) {
-                await this.delay(100);
-                if (this.batchAbortController.signal.aborted) {
-                    throw new Error('Cancelled');
+                // Check if paused
+                while (this.isPaused) {
+                    await this.delay(100);
+                    if (this.batchAbortController.signal.aborted) {
+                        throw new Error('Cancelled');
+                    }
                 }
-            }
-            
-            // Open batch - all URLs at once
-            this.openBatchUrls(batch);
-            
-            // Update progress and save memory
-            const currentOpenedCount = openedCount + Math.min((i + 1) * batchSize, urlsToOpen.length);
+                
+                // Open batch - all URLs at once
+                this.openBatchUrls(batch);
+                
+                // Update progress and save memory
+                const currentOpenedCount = openedCount + Math.min((i + 1) * batchSize, urlsToOpen.length);
                 this.updateProgressUI(currentOpenedCount, totalUrls, batchSize);
                 
                 // Wait for next batch
