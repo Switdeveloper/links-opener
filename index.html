@@ -26,7 +26,7 @@
         <main class="main">
             <div class="hero">
                 <h1 class="title">Open Multiple Links at Once</h1>
-                <p class="subtitle">Paste URLs, upload a file, or drag & drop. Open them all in batches.</p>
+                <p class="subtitle">Paste URLs, upload a file, or drag & drop. Open them all in batches with full control.</p>
             </div>
 
             <!-- Input Section -->
@@ -92,24 +92,141 @@
                     <h3>Batch Settings</h3>
                     <span class="batch-info" id="batchInfo">0 batches</span>
                 </div>
-                <div class="batch-controls">
-                    <div class="batch-control">
-                        <label>Links per batch</label>
-                        <div class="batch-input-group">
-                            <input type="number" id="batchSize" value="10" min="1" max="100">
-                            <span class="batch-hint">Max: 100</span>
+                
+                <!-- Batch Mode Tabs -->
+                <div class="batch-tabs">
+                    <button class="batch-tab active" data-mode="auto" title="Automatic time-based batches">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M8 4V8L11 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        Auto Timer
+                    </button>
+                    <button class="batch-tab" data-mode="manual" title="Click to proceed to next batch">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 2L12 8L4 14V2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Manual Click
+                    </button>
+                    <button class="batch-tab" data-mode="scheduled" title="Schedule start time">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M6 1V4M10 1V4M2 7H14" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        Scheduled
+                    </button>
+                </div>
+
+                <!-- Auto Timer Mode -->
+                <div class="batch-mode-content active" data-mode="auto">
+                    <div class="batch-controls">
+                        <div class="batch-control">
+                            <label>Links per batch</label>
+                            <div class="batch-input-group">
+                                <input type="number" id="batchSize" value="10" min="1" max="100">
+                                <span class="batch-hint">Max: 100</span>
+                            </div>
+                        </div>
+                        <div class="batch-control">
+                            <label>Delay between batches</label>
+                            <div class="batch-input-group">
+                                <input type="number" id="batchDelay" value="2" min="0" max="60" step="0.5">
+                                <span class="batch-hint">seconds</span>
+                            </div>
+                        </div>
+                        <div class="batch-control">
+                            <label>Total batches</label>
+                            <div class="batch-value" id="totalBatches">0</div>
                         </div>
                     </div>
-                    <div class="batch-control">
-                        <label>Delay between batches</label>
-                        <div class="batch-input-group">
-                            <input type="number" id="batchDelay" value="2000" min="0" max="30000" step="500">
-                            <span class="batch-hint">ms</span>
+                </div>
+
+                <!-- Manual Click Mode -->
+                <div class="batch-mode-content" data-mode="manual">
+                    <div class="batch-controls">
+                        <div class="batch-control">
+                            <label>Links per batch</label>
+                            <div class="batch-input-group">
+                                <input type="number" id="manualBatchSize" value="10" min="1" max="100">
+                                <span class="batch-hint">Max: 100</span>
+                            </div>
+                        </div>
+                        <div class="batch-control wide">
+                            <label>How it works</label>
+                            <div class="batch-description">
+                                Each batch opens when you click "Open Next Batch". 
+                                Perfect for controlled browsing with pauses between batches.
+                            </div>
                         </div>
                     </div>
-                    <div class="batch-control">
-                        <label>Total batches</label>
-                        <div class="batch-value" id="totalBatches">0</div>
+                </div>
+
+                <!-- Scheduled Mode -->
+                <div class="batch-mode-content" data-mode="scheduled">
+                    <div class="batch-controls">
+                        <div class="batch-control">
+                            <label>Start time</label>
+                            <div class="batch-input-group">
+                                <input type="datetime-local" id="scheduledTime">
+                            </div>
+                        </div>
+                        <div class="batch-control">
+                            <label>Links per batch</label>
+                            <div class="batch-input-group">
+                                <input type="number" id="scheduledBatchSize" value="10" min="1" max="100">
+                                <span class="batch-hint">Max: 100</span>
+                            </div>
+                        </div>
+                        <div class="batch-control">
+                            <label>Delay after start</label>
+                            <div class="batch-input-group">
+                                <input type="number" id="scheduledDelay" value="2" min="0" max="60" step="0.5">
+                                <span class="batch-hint">seconds</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scheduled-countdown" id="scheduledCountdown" style="display: none;">
+                        <span class="countdown-label">Starting in:</span>
+                        <span class="countdown-value" id="countdownValue">00:00:00</span>
+                    </div>
+                </div>
+
+                <!-- Advanced Options -->
+                <div class="batch-advanced">
+                    <button class="batch-advanced-toggle" id="advancedToggle">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Advanced Options
+                    </button>
+                    <div class="batch-advanced-content" id="advancedContent" style="display: none;">
+                        <div class="batch-controls">
+                            <div class="batch-control">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="shuffleBatches" checked>
+                                    <span>Shuffle URLs randomly</span>
+                                </label>
+                            </div>
+                            <div class="batch-control">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="skipInvalid" checked>
+                                    <span>Skip invalid URLs automatically</span>
+                                </label>
+                            </div>
+                            <div class="batch-control">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="confirmEachBatch">
+                                    <span>Confirm before opening each batch</span>
+                                </label>
+                            </div>
+                            <div class="batch-control">
+                                <label>Stop after</label>
+                                <div class="batch-input-group">
+                                    <input type="number" id="maxBatches" value="0" min="0">
+                                    <span class="batch-hint">batches (0 = no limit)</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -150,12 +267,27 @@
                     <span id="progressBatch">Batch 0 of 0</span>
                     <span id="progressNext">Next batch in 2s</span>
                 </div>
-                <button class="btn btn-danger" id="cancelBatchBtn">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M7 7L2 2M7 7L12 2M7 7L2 12M7 7L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Cancel
-                </button>
+                <div class="progress-actions">
+                    <button class="btn btn-secondary" id="pauseBatchBtn">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <rect x="2" y="2" width="4" height="10" rx="1" fill="currentColor"/>
+                            <rect x="8" y="2" width="4" height="10" rx="1" fill="currentColor"/>
+                        </svg>
+                        Pause
+                    </button>
+                    <button class="btn btn-primary" id="nextBatchBtn" style="display: none;">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M4 2L11 7L4 12V2Z" fill="currentColor"/>
+                        </svg>
+                        Open Next Batch
+                    </button>
+                    <button class="btn btn-danger" id="cancelBatchBtn">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M7 7L2 2M7 7L12 2M7 7L2 12M7 7L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Cancel
+                    </button>
+                </div>
             </div>
 
             <!-- Features -->
@@ -167,8 +299,8 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">⚡</div>
-                    <h3>Batch Processing</h3>
-                    <p>Open links in configurable batches with delays</p>
+                    <h3>Smart Batches</h3>
+                    <p>Auto-timer, manual click, or scheduled start</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🔒</div>
@@ -206,7 +338,13 @@
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <h3>Open URLs in Batches</h3>
-            <p>You're about to open <strong id="batchModalCount">0</strong> URLs in batches.</p>
+            <p>You're about to open <strong id="batchModalCount">0</strong> URLs.</p>
+            
+            <div class="batch-mode-display" id="batchModeDisplay">
+                <span class="mode-label">Mode:</span>
+                <span class="mode-value" id="modalModeValue">Auto Timer</span>
+            </div>
+            
             <div class="batch-summary">
                 <div class="batch-summary-item">
                     <span>Links per batch:</span>
@@ -216,15 +354,34 @@
                     <span>Total batches:</span>
                     <strong id="modalTotalBatches">0</strong>
                 </div>
-                <div class="batch-summary-item">
+                <div class="batch-summary-item" id="modalDelayItem">
                     <span>Delay between batches:</span>
-                    <strong id="modalBatchDelay">2000ms</strong>
+                    <strong id="modalBatchDelay">2s</strong>
+                </div>
+                <div class="batch-summary-item" id="modalScheduledItem" style="display: none;">
+                    <span>Scheduled start:</span>
+                    <strong id="modalScheduledTime">--</strong>
                 </div>
             </div>
+            
             <p class="modal-hint">⚠️ Make sure your browser allows popups for this site.</p>
             <div class="modal-actions">
                 <button class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
                 <button class="btn btn-primary" id="confirmBatchBtn">Start Opening</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog Modal -->
+    <div class="modal" id="confirmModal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>Open Next Batch?</h3>
+            <p>Ready to open batch <strong id="confirmBatchNumber">1</strong> of <strong id="confirmTotalBatches">5</strong>.</p>
+            <p class="confirm-details">This will open <strong id="confirmBatchSize">10</strong> URLs.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="skipBatchBtn">Skip</button>
+                <button class="btn btn-primary" id="confirmOpenBatchBtn">Open Now</button>
             </div>
         </div>
     </div>
